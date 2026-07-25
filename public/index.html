@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page Pulse | Web Audit Tool</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background-color: #f8fafc; color: #0f172a; display: flex; flex-direction: column; min-height: 100vh; }
+    
+    header { background: #0f172a; color: white; padding: 2.5rem 1rem; text-align: center; }
+    header h1 { font-size: 2.2rem; margin-bottom: 0.5rem; font-weight: 800; }
+    header p { color: #94a3b8; font-size: 1rem; }
+
+    main { max-width: 900px; width: 100%; margin: 2rem auto; padding: 0 1rem; flex: 1; }
+
+    .search-box { display: flex; gap: 0.5rem; background: white; padding: 0.75rem; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+    .search-box input { flex: 1; border: 1px solid #cbd5e1; padding: 0.75rem 1rem; font-size: 1rem; border-radius: 6px; outline: none; }
+    .search-box input:focus { border-color: #2563eb; }
+    .search-box button { background: #2563eb; color: white; border: none; padding: 0.75rem 1.5rem; font-size: 1rem; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    .search-box button:hover { background: #1d4ed8; }
+    .search-box button:disabled { background: #94a3b8; cursor: not-allowed; }
+
+    .error-card { display: none; background: #fef2f2; border-left: 4px solid #ef4444; color: #991b1b; padding: 1rem; margin-top: 1.5rem; border-radius: 4px; font-weight: 500; }
+
+    .results { display: none; margin-top: 2rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem; }
+    .card { background: white; padding: 1.25rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+    .card h4 { font-size: 0.8rem; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+    .card .value { font-size: 1.5rem; font-weight: 700; color: #0f172a; }
+
+    .text-section { background: white; padding: 1.25rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; margin-top: 1rem; }
+    .text-section h4 { font-size: 0.8rem; text-transform: uppercase; color: #64748b; margin-bottom: 0.25rem; letter-spacing: 0.05em; }
+    .text-section p { font-size: 1rem; color: #334155; line-height: 1.5; }
+
+    footer { background: #ffffff; border-top: 1px solid #e2e8f0; text-align: center; padding: 1.5rem; font-size: 0.9rem; color: #64748b; margin-top: auto; }
+    footer a { color: #2563eb; text-decoration: none; font-weight: 600; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Page Pulse</h1>
+    <p>Instant Web Page Audit & Metric Parser</p>
+  </header>
+
+  <main>
+    <div class="search-box">
+      <input type="text" id="urlInput" placeholder="Enter website URL (e.g., example.com)" />
+      <button id="auditBtn" onclick="runAudit()">Audit Page</button>
+    </div>
+
+    <div id="errorCard" class="error-card"></div>
+
+    <div id="results" class="results">
+      <div class="text-section">
+        <h4>Page Title</h4>
+        <p id="resTitle">-</p>
+      </div>
+
+      <div class="text-section">
+        <h4>Meta Description</h4>
+        <p id="resMeta">-</p>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h4>HTTP Status</h4>
+          <div class="value" id="resStatus">-</div>
+        </div>
+        <div class="card">
+          <h4>Response Time</h4>
+          <div class="value" id="resTime">-</div>
+        </div>
+        <div class="card">
+          <h4>H1 Count</h4>
+          <div class="value" id="resH1">-</div>
+        </div>
+        <div class="card">
+          <h4>Missing Alt Text</h4>
+          <div class="value" id="resAlt">-</div>
+        </div>
+        <div class="card">
+          <h4>Word Count</h4>
+          <div class="value" id="resWords">-</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>Built for <a href="https://digitalheroesco.com" target="_blank" rel="noopener noreferrer">Digital Heroes Training Task</a></p>
+  </footer>
+
+  <script>
+    async function runAudit() {
+      const urlInput = document.getElementById('urlInput').value.trim();
+      const btn = document.getElementById('auditBtn');
+      const errorCard = document.getElementById('errorCard');
+      const resultsDiv = document.getElementById('results');
+
+      if (!urlInput) {
+        showError('Please enter a valid URL to audit.');
+        return;
+      }
+
+      // Reset state
+      errorCard.style.display = 'none';
+      resultsDiv.style.display = 'none';
+      btn.disabled = true;
+      btn.innerText = 'Auditing...';
+
+      try {
+        const response = await fetch('/api/audit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: urlInput })
+        });
+
+        const json = await response.json();
+
+        if (!response.ok) {
+          throw new Error(json.error || 'Failed to complete website audit.');
+        }
+
+        const data = json.data;
+
+        // Populate fields
+        document.getElementById('resTitle').innerText = data.title;
+        document.getElementById('resMeta').innerText = data.metaDescription;
+        document.getElementById('resStatus').innerText = data.httpStatus;
+        document.getElementById('resTime').innerText = `${data.responseTimeMs} ms`;
+        document.getElementById('resH1').innerText = data.h1Count;
+        document.getElementById('resAlt').innerText = data.imagesMissingAlt;
+        document.getElementById('resWords').innerText = data.wordCount.toLocaleString();
+
+        resultsDiv.style.display = 'block';
+
+      } catch (err) {
+        showError(err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Audit Page';
+      }
+    }
+
+    function showError(msg) {
+      const errorCard = document.getElementById('errorCard');
+      errorCard.innerText = msg;
+      errorCard.style.display = 'block';
+    }
+  </script>
+</body>
+</html>
