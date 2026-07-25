@@ -103,7 +103,7 @@ Once you've added it to `README.md`, run these commands in your terminal:
 git add README.md
 git commit -m "Add API Reference documentation to README"
 git push origin main
----
+```
 
 ## 💡 Key Design Decisions & Architectural Choices
 
@@ -116,5 +116,9 @@ git push origin main
 * **Reasoning:** Static auditing of tags (`<title>`, `<meta>`, `<h1>`, `<img>`) does not require JavaScript execution. `cheerio` parses raw HTML strings in under 10ms with negligible CPU/memory overhead compared to spinning up Chromium instances.
 
 ### 3. Graceful Network & Format Error Normalization
+
+## 🤖 AI Usage Disclosure
+
+AI tools were leveraged selectively during development to assist with complex problem-solving and architectural decisions and during learning of some of these topics from scratch. Specifically, AI assisted in structuring the Cheerio HTML parsing edge-cases, configuring robust Express error-handling middleware, and drafting isolation unit tests in Jest. Basic scaffolding, UI layout, and initial Git/deployment workflows were implemented manually.
 * **Decision:** Implemented a unified error handler converting network errors (`ENOTFOUND`, `ETIMEDOUT`), non-HTML content types, and malformed URLs into predictable, client-friendly JSON responses with semantic HTTP status codes (`400`, `404`, `504`).
 * **Reasoning:** Prevents unhandled node server crashes and ensures the frontend UI receives structured failure states rather than generic server errors.
