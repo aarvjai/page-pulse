@@ -104,3 +104,17 @@ git add README.md
 git commit -m "Add API Reference documentation to README"
 git push origin main
 ---
+
+## 💡 Key Design Decisions & Architectural Choices
+
+### 1. Unified Single-Server Architecture (Express Static Serving)
+* **Decision:** Served the HTML/CSS frontend static files directly via Express (`app.use(express.static('public'))`) rather than setting up a decoupled React/Vite application.
+* **Reasoning:** Minimizes infrastructure overhead, eliminates Cross-Origin Resource Sharing (CORS) complexity during deployment, and provides a single unified URL for reviewers to evaluate.
+
+### 2. Fast In-Memory Parsing with Cheerio
+* **Decision:** Utilized `cheerio` for HTML DOM extraction over headless browser options like Puppeteer or Playwright.
+* **Reasoning:** Static auditing of tags (`<title>`, `<meta>`, `<h1>`, `<img>`) does not require JavaScript execution. `cheerio` parses raw HTML strings in under 10ms with negligible CPU/memory overhead compared to spinning up Chromium instances.
+
+### 3. Graceful Network & Format Error Normalization
+* **Decision:** Implemented a unified error handler converting network errors (`ENOTFOUND`, `ETIMEDOUT`), non-HTML content types, and malformed URLs into predictable, client-friendly JSON responses with semantic HTTP status codes (`400`, `404`, `504`).
+* **Reasoning:** Prevents unhandled node server crashes and ensures the frontend UI receives structured failure states rather than generic server errors.
